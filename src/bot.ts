@@ -99,22 +99,19 @@ export async function runBot(): Promise<void> {
   log('INFO', `open>${(config.openThreshold * 100).toFixed(1)}%  close<${(config.closeThreshold * 100).toFixed(1)}%  poll=${config.pollIntervalMs}ms`);
 
   const { backpack, bybit } = createExchanges();
-  let hasPosition = false;
 
   for (;;) {
     try {
       const snap = await fetchPrices(backpack, bybit);
       log(
         'INFO',
-        `backpack bid/ask=${snap.backpackBid.toFixed(4)}/${snap.backpackAsk.toFixed(4)} bybit bid/ask=${snap.bybitBid.toFixed(4)}/${snap.bybitAsk.toFixed(4)} openSpread=${(snap.openSpread * 100).toFixed(3)}% closeSpread=${(snap.closeSpread * 100).toFixed(3)}% position=${hasPosition ? 'OPEN' : 'FLAT'}`,
+        `backpack bid/ask=${snap.backpackBid.toFixed(4)}/${snap.backpackAsk.toFixed(4)} bybit bid/ask=${snap.bybitBid.toFixed(4)}/${snap.bybitAsk.toFixed(4)} openSpread=${(snap.openSpread * 100).toFixed(3)}% closeSpread=${(snap.closeSpread * 100).toFixed(3)}%`,
       );
 
-      if (!hasPosition && snap.openSpread > config.openThreshold) {
+      if (snap.openSpread > config.openThreshold) {
         await openPosition(backpack, bybit, snap);
-        hasPosition = true;
-      } else if (hasPosition && snap.closeSpread < config.closeThreshold) {
+      } else if (snap.closeSpread < config.closeThreshold) {
         await closePosition(backpack, bybit, snap);
-        hasPosition = false;
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
